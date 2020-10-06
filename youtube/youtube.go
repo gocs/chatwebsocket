@@ -25,7 +25,6 @@ type Stats struct {
 }
 
 func GetSubscribers() (Item, error) {
-
 	req, err := http.NewRequest("GET", "https://www.googleapis.com/youtube/v3/channels", nil)
 	if err != nil {
 		log.Println(err)
@@ -45,8 +44,6 @@ func GetSubscribers() (Item, error) {
 		return Item{}, err
 	}
 	defer resp.Body.Close()
-
-	fmt.Println("Response Status:", resp.Status)
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

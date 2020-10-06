@@ -43,7 +43,7 @@ func Writer(conn *websocket.Conn) {
 				fmt.Println(err)
 			}
 
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(jsonStr)); err != nil {
+			if err := conn.WriteMessage(websocket.TextMessage, jsonStr); err != nil {
 				fmt.Println(err)
 				return
 			}
