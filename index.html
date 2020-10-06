@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <h2>Youtube Subs</h2>
+    <h1 id="subs"></h1>
+
+    <script>
+        let subs = [];
+        const socket = new WebSocket("ws://localhost:8080/stats");
+        console.log("attempting connection...");
+
+        socket.onopen = () => {
+            console.log("success");
+        }
+
+        socket.onclose = (event) => {
+            console.log("Socket closed:", event);
+        }
+
+        socket.onerror = (event) => {
+            console.log("socket err:", err);
+        }
+
+        socket.onmessage = (event) => {
+            subs = JSON.parse(event.data);
+            document.getElementById("subs").innerText = subs.statistics.subscriberCount;
+        }
+    </script>
+</body>
+
+</html>
