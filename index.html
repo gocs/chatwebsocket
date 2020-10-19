@@ -4,34 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>hepre</title>
 </head>
 
 <body>
-
-    <h2>Youtube Subs</h2>
-    <h1 id="subs"></h1>
-
+    <input id="username" type="text" />
+    <input id="message" type="text" />
+    <button onclick="send()">Send</button>
+    <pre id="output"></pre>
     <script>
-        let subs = [];
-        const socket = new WebSocket("ws://localhost:8080/stats");
-        console.log("attempting connection...");
+        var username = document.getElementById("username");
+        var message = document.getElementById("message");
+        var output = document.getElementById("output");
+        var client_send = new WebSocket(`wss://${location.host}/read`);
+        var client_recv = new WebSocket(`wss://${location.host}/write`);
 
-        socket.onopen = () => {
-            console.log("success");
-        }
+        client_recv.onopen = function () {
+            output.innerHTML += "Status: Connected\n";
+        };
 
-        socket.onclose = (event) => {
-            console.log("Socket closed:", event);
-        }
+        client_recv.addEventListener('message', function (e) {
+            let messages = "";
+            for (const comment of JSON.parse(e.data)) {
+                messages += `${comment.name}: ${comment.message}\n`;
+            }
+            output.innerHTML = messages;
+        });
 
-        socket.onerror = (event) => {
-            console.log("socket err:", err);
-        }
+        function send() {
+            if (message.value === "") return;
 
-        socket.onmessage = (event) => {
-            subs = JSON.parse(event.data);
-            document.getElementById("subs").innerText = subs.statistics.subscriberCount;
+            client_send.send(JSON.stringify({
+                "name": username.value,
+                "message": message.value,
+            }));
+            message.value = "";
         }
     </script>
 </body>

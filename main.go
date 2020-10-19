@@ -1,34 +1,67 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"time"
 
-	socket "github.com/gocs/chatwebsocket/websocket"
+	"github.com/gorilla/websocket"
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 func main() {
 
-	fmt.Println("running...")
-	setupRoutes()
-}
-
-func setupRoutes() {
-	http.HandleFunc("/", homePage)
-	http.HandleFunc("/stats", stats)
-
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "home page")
-}
-
-func stats(w http.ResponseWriter, r *http.Request) {
-	ws, err := socket.Upgrade(w, r)
-	if err != nil {
-		fmt.Fprintf(w, "%+v\n", err)
+	type comment struct {
+		Message string `json:"message"`
+		Name    string `json:"name"`
 	}
-	go socket.Writer(ws)
+	comments := []comment{}
+
+	http.HandleFunc("/read", func(w http.ResponseWriter, r *http.Request) {
+		conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
+
+		for {
+			// Read message from browser
+			_, msgByte, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+
+			c := comment{}
+			if err := json.Unmarshal(msgByte, &c); err != nil {
+				fmt.Println("err json fmt:", err)
+				return
+			}
+
+			comments = append(comments, c)
+		}
+	})
+	http.HandleFunc("/write", func(w http.ResponseWriter, r *http.Request) {
+		conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
+
+		ticker := time.NewTicker(10 * time.Millisecond)
+		for range ticker.C {
+			msgJSON, err := json.Marshal(comments)
+			if err != nil {
+				fmt.Println("err json fmt:", err)
+				return
+			}
+
+			// Write message back to browser
+			if err = conn.WriteMessage(websocket.TextMessage, msgJSON); err != nil {
+				return
+			}
+		}
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "index.html")
+	})
+
+	http.ListenAndServe(":8080", nil)
 }
